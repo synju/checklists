@@ -28,8 +28,12 @@ const chimeEnabled = ref(true)
 const tickEnabled = ref(true)
 const sidebarVisible = ref(loadPref('sidebar', true))
 const focusMode = ref(false)
+const detailVisible = ref(loadPref('detail', true))
+const notesVisible = ref(loadPref('notes', false))
+const leaderActive = ref(false)
 let wasComplete = false
 let prevDone = 0
+let leaderTimer = null
 let unsubscribe = () => {}
 
 function loadPref(key, def) {
@@ -40,6 +44,8 @@ function savePref(key, val) {
 }
 function toggleSidebar() { sidebarVisible.value = !sidebarVisible.value; focusMode.value = false; savePref('sidebar', sidebarVisible.value) }
 function toggleFocus() { focusMode.value = !focusMode.value }
+function toggleDetail() { detailVisible.value = !detailVisible.value; savePref('detail', detailVisible.value) }
+function toggleNotes() { notesVisible.value = !notesVisible.value; savePref('notes', notesVisible.value) }
 
 const cursorItem = computed(() => active.value?.items?.[cursor.value] || null)
 
@@ -230,6 +236,24 @@ function onKey(e) {
   if (modal.value) return // modals handle their own keys
   const t = e.target
   if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return
+  // Ctrl+G leader (tmux/TUI-style): the next key toggles a panel or opens a menu.
+  if (leaderActive.value) {
+    leaderActive.value = false
+    clearTimeout(leaderTimer)
+    if (e.key === 'd') { toggleDetail(); e.preventDefault(); return }
+    if (e.key === 'n') { toggleNotes(); e.preventDefault(); return }
+    if (e.key === 'f') { toggleFocus(); e.preventDefault(); return }
+    if (e.key === 'c') { openConfig(); e.preventDefault(); return }
+    if (e.key === 'o') { if (active.value?.items?.length) itemContext(cursor.value); e.preventDefault(); return }
+    return // unknown leader key: consume it
+  }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'g' || e.key === 'G')) {
+    leaderActive.value = true
+    clearTimeout(leaderTimer)
+    leaderTimer = setTimeout(() => { leaderActive.value = false }, 2000)
+    e.preventDefault()
+    return
+  }
   if ((e.ctrlKey || e.metaKey) && (e.key === 'l' || e.key === 'L')) { toggleSidebar(); e.preventDefault(); return }
   if (mode.value === 'list') {
     switch (e.key) {
@@ -313,8 +337,8 @@ onUnmounted(() => { unsubscribe(); window.removeEventListener('keydown', onKey) 
         <ProgressHeader :cl="active" />
         <template v-if="mode === 'list'">
           <Checklist :items="active?.items || []" :cursor="cursor" @toggle="toggle" @select="(i) => (cursor = i)" @open="openDetail" @context="itemContext" />
-          <DetailPanel v-if="!focusMode" :item="cursorItem" />
-          <NotesPanel v-if="!focusMode && cursorItem?.notes" :item="cursorItem" />
+          <DetailPanel v-if="detailVisible && !focusMode" :item="cursorItem" />
+          <NotesPanel v-if="notesVisible && !focusMode" :item="cursorItem" />
         </template>
         <DetailView v-else :item="cursorItem" :name="active?.displayName" @close="closeDetail" />
       </div>
@@ -329,7 +353,9 @@ onUnmounted(() => { unsubscribe(); window.removeEventListener('keydown', onKey) 
         <span><kbd>e</kbd> edit</span><span class="sep">·</span>
         <span><kbd>a</kbd> add</span><span class="sep">·</span>
         <span><kbd>f</kbd> focus</span><span class="sep">·</span>
-        <span>right-click for actions</span>
+        <span><kbd>^G</kbd> then <kbd>d</kbd>/<kbd>n</kbd> panels</span><span class="sep">·</span>
+        <span v-if="leaderActive" style="color:var(--green);font-weight:600">⌃G…</span>
+        <span v-else>right-click menu</span>
       </div>
       <div class="hints">
         <span class="dotlive"></span>

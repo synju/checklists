@@ -33,3 +33,7 @@ electron-builder bundles `core/target/release/checklists.exe` as a sidecar under
 Live store sync, keyboard nav (↑↓/jk, space, ←→, Enter), inline detail mode, markdown
 detail/notes, completion chime + toast, agent-tick sound, editing modals (right-click / `e` `a`
 `r` `n`), 6 themes (Config modal, `c`), sidebar toggle (`Ctrl+L` / ☰), focus mode (`f`).
+
+A tmux-style **`Ctrl+G` leader** (like the terminal app) toggles panels and menus: `Ctrl+G` then
+`d` (Detail), `n` (Notes), `f` (focus), `c` (Config), or `o` (item actions). Detail/Notes panel
+visibility persists.
