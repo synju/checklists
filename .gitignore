@@ -1,0 +1,17 @@
+# Rust
+core/target/
+
+# Node / Electron
+app/node_modules/
+app/dist/
+app/dist-electron/
+app/release/
+
+# Python venvs (if any land here)
+.venv/
+
+# misc
+*.log
+*.tmp
+.DS_Store
+Thumbs.db

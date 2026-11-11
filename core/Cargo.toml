@@ -1,0 +1,23 @@
+[package]
+name = "checklists-app"
+version = "0.1.0"
+edition = "2021"
+description = "Core for the checklists desktop app — shared JSON checklist store, model, and config."
+license = "MIT"
+
+# Library crate (checklists_app) backs the Electron + Vue GUI; the binary is a thin CLI over it.
+[lib]
+name = "checklists_app"
+path = "src/lib.rs"
+
+[[bin]]
+name = "checklists"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+
+# No dev-dependencies: tests use a std-only temp dir so the whole crate builds on
+# pure rustup windows-gnu (no MinGW dlltool needed).

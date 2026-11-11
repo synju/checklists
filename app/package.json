@@ -1,0 +1,48 @@
+{
+  "name": "checklists-app",
+  "version": "0.1.0",
+  "description": "Desktop GUI (Electron + Vue) for the shared JSON checklist store.",
+  "author": "synju",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.js",
+  "scripts": {
+    "vite": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 5173 --strictPort",
+    "electron": "electron electron/main.js",
+    "dev": "concurrently -k -n vite,electron \"vite\" \"wait-on http://localhost:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron electron/main.js\"",
+    "start": "electron electron/main.js",
+    "pack": "vite build && electron-builder --dir",
+    "dist": "vite build && electron-builder"
+  },
+  "dependencies": {
+    "marked": "^15.0.7",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^33.3.1",
+    "electron-builder": "^25.1.8",
+    "vite": "^6.0.7",
+    "wait-on": "^8.0.2"
+  },
+  "build": {
+    "appId": "com.charlie.checklists",
+    "productName": "Checklist",
+    "directories": { "output": "release" },
+    "files": ["dist/**/*", "electron/**/*"],
+    "extraResources": [
+      { "from": "../core/target/release/checklists.exe", "to": "checklists.exe" }
+    ],
+    "win": { "target": ["nsis"], "icon": "build/icon.ico" },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    }
+  }
+}
