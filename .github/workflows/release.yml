@@ -1,0 +1,89 @@
+name: Release
+
+# Builds the Windows installer and (once SignPath is configured) code-signs it via
+# SignPath Foundation's free OSS signing, then attaches it to a GitHub Release.
+#
+# Trigger: push a version tag, e.g.  git tag v0.1.1 && git push origin v0.1.1
+# Or run manually from the Actions tab (build only, no release).
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write # create releases
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # --- build the Rust core (the sidecar the installer bundles) ---
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build Rust core
+        working-directory: core
+        run: cargo build --release
+
+      # --- build the Electron installer (unsigned) ---
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Install app deps
+        working-directory: app
+        run: npm ci
+      - name: Build installer
+        working-directory: app
+        run: npm run dist
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false' # don't try local signtool; SignPath signs below
+
+      - name: Upload unsigned installer (artifact for SignPath)
+        id: unsigned
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer-unsigned
+          path: app/release/*.exe
+          if-no-files-found: error
+
+      # --- sign via SignPath, only if configured (repo variable + secret set) ---
+      - name: Code-sign with SignPath
+        id: sign
+        if: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' }}
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: checklists
+          signing-policy-slug: release-signing
+          github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: signed
+
+      # --- gather the final installer (signed if available, else unsigned) ---
+      - name: Collect installer
+        id: collect
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force out | Out-Null
+          $signed = Get-ChildItem signed/*.exe -ErrorAction SilentlyContinue
+          if ($signed) {
+            Copy-Item $signed.FullName out/
+            "signed=true" >> $env:GITHUB_OUTPUT
+          } else {
+            Copy-Item app/release/*.exe out/
+            "signed=false" >> $env:GITHUB_OUTPUT
+          }
+
+      # --- publish a GitHub Release (tags only) ---
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/*.exe
+          body: |
+            Windows installer.
+            ${{ steps.collect.outputs.signed == 'true' && 'Code-signed via SignPath Foundation.' || 'Unsigned (SignPath not configured yet — SmartScreen may warn).' }}

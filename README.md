@@ -65,6 +65,11 @@ detail/notes, completion chime + toast, a tick sound on agent ticks, editing mod
 `e` `a` `r` `n`), six switchable themes (Config, `c`), sidebar toggle (`Ctrl+L`), and focus mode
 (`f`). Settings persist to a per-app `config.json`.
 
+## Releases & code signing
+
+Tagged releases are built by [GitHub Actions](.github/workflows/release.yml) and code-signed for
+free via SignPath Foundation (once configured) — see [CODE_SIGNING.md](CODE_SIGNING.md).
+
 ## License
 
 [MIT](LICENSE).
