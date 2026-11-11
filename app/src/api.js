@@ -37,3 +37,8 @@ export function onEvent(cb) {
 export const win = (typeof window !== 'undefined' && window.win) || {
   minimize() {}, toggleMaximize() {}, close() {},
 }
+
+// Store-folder picker (Electron). In the browser there's no native dialog.
+export const store = (typeof window !== 'undefined' && window.store) || {
+  change: async () => ({ canceled: true }),
+}

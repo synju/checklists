@@ -116,6 +116,15 @@ function onPreviewTheme(id) { applyTheme(id) }
 function onCommitTheme(id) { theme.value = id; applyTheme(id); api.call('set_config', { theme: id }) }
 function onToggleChime(v) { chimeEnabled.value = v; api.call('set_config', { chime: v }) }
 function onToggleTick(v) { tickEnabled.value = v; api.call('set_config', { tick: v }) }
+async function changeStore() {
+  const res = await api.store.change()
+  if (!res || res.canceled || !res.dir) return
+  storeDir.value = res.dir
+  activeId.value = null
+  active.value = null
+  cursor.value = 0
+  await loadList() // service was respawned at the new dir
+}
 function onCloseConfig() { applyTheme(theme.value); closeModal() }
 async function refreshAll() {
   const beforeComplete = wasComplete
@@ -335,6 +344,6 @@ onUnmounted(() => { unsubscribe(); window.removeEventListener('keydown', onKey) 
     <EditItemModal v-else-if="modal?.kind === 'edit'" :label="modal.label" :detail="modal.detail" @save="saveEdit" @close="closeModal" />
     <PromptModal v-else-if="modal?.kind === 'prompt'" :title="modal.title" :label="modal.label" :value="modal.value" :placeholder="modal.placeholder" :ok-text="modal.okText" @submit="modal.onSubmit" @close="closeModal" />
     <ConfirmModal v-else-if="modal?.kind === 'confirm'" :message="modal.message" :ok-text="modal.okText" @yes="modal.onYes" @close="closeModal" />
-    <ConfigModal v-else-if="modal?.kind === 'config'" :themes="THEMES" :current-theme="theme" :chime="chimeEnabled" :tick="tickEnabled" :dir="storeDir" @preview="onPreviewTheme" @commit="onCommitTheme" @chime="onToggleChime" @tick="onToggleTick" @close="onCloseConfig" />
+    <ConfigModal v-else-if="modal?.kind === 'config'" :themes="THEMES" :current-theme="theme" :chime="chimeEnabled" :tick="tickEnabled" :dir="storeDir" @preview="onPreviewTheme" @commit="onCommitTheme" @chime="onToggleChime" @tick="onToggleTick" @change-store="changeStore" @close="onCloseConfig" />
   </div>
 </template>

@@ -179,8 +179,11 @@ fn dispatch(store: &Store, req: &Request) -> Result<Value> {
             if let Some(t) = req.params.get("theme").and_then(Value::as_str) { cfg.theme = t.to_string(); }
             if let Some(c) = req.params.get("chime").and_then(Value::as_bool) { cfg.chime = c; }
             if let Some(t) = req.params.get("tick").and_then(Value::as_bool) { cfg.tick = t; }
+            if let Some(d) = req.params.get("checklist_dir").and_then(Value::as_str) {
+                if !d.is_empty() { cfg.checklist_dir = std::path::PathBuf::from(d); }
+            }
             cfg.save()?;
-            Ok(json!({ "theme": cfg.theme, "chime": cfg.chime, "tick": cfg.tick }))
+            Ok(json!({ "theme": cfg.theme, "chime": cfg.chime, "tick": cfg.tick, "dir": cfg.checklist_dir.display().to_string() }))
         }
         other => bail!("unknown method: {other}"),
     }

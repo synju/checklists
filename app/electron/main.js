@@ -1,7 +1,7 @@
 // Electron main process: owns the window and the long-lived Rust `checklists serve` process.
 // It bridges the renderer (Vue) <-> the service over stdio JSON-lines.
 
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import { spawn } from 'node:child_process'
 import { createInterface } from 'node:readline'
 import { existsSync } from 'node:fs'
@@ -116,6 +116,27 @@ ipcMain.on('win:toggleMaximize', () => {
   mainWindow.isMaximized() ? mainWindow.unmaximize() : mainWindow.maximize()
 })
 ipcMain.on('win:close', () => mainWindow?.close())
+
+// Stop the current service and start a fresh one (re-reads config.json, e.g. a new store dir).
+function restartService() {
+  try { child?.kill() } catch {}
+  for (const { reject } of pending.values()) { try { reject(new Error('service restarting')) } catch {} }
+  pending.clear()
+  startService()
+}
+
+// Pick a store folder, persist it, and re-point the running service at it.
+ipcMain.handle('store:change', async () => {
+  const res = await dialog.showOpenDialog(mainWindow, {
+    title: 'Choose checklist store folder',
+    properties: ['openDirectory', 'createDirectory'],
+  })
+  if (res.canceled || !res.filePaths?.[0]) return { canceled: true }
+  const dir = res.filePaths[0]
+  try { await callService('set_config', { checklist_dir: dir }) } catch { /* best effort */ }
+  restartService()
+  return { dir }
+})
 
 app.whenReady().then(() => {
   startService()

@@ -17,3 +17,7 @@ contextBridge.exposeInMainWorld('win', {
   toggleMaximize: () => ipcRenderer.send('win:toggleMaximize'),
   close: () => ipcRenderer.send('win:close'),
 })
+
+contextBridge.exposeInMainWorld('store', {
+  change: () => ipcRenderer.invoke('store:change'),
+})

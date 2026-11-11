@@ -8,7 +8,7 @@ defineProps({
   tick: { type: Boolean, default: true },
   dir: { type: String, default: '' },
 })
-const emit = defineEmits(['preview', 'commit', 'chime', 'tick', 'close'])
+const emit = defineEmits(['preview', 'commit', 'chime', 'tick', 'change-store', 'close'])
 </script>
 
 <template>
@@ -44,7 +44,10 @@ const emit = defineEmits(['preview', 'commit', 'chime', 'tick', 'close'])
 
     <div class="cfg-row">
       <span class="cfg-label">Store folder</span>
-      <span class="cfg-val mono">{{ dir }}</span>
+      <span style="display:flex;align-items:center;gap:10px;min-width:0">
+        <span class="cfg-val mono">{{ dir }}</span>
+        <button class="btn" style="padding:5px 11px;font-size:11.5px;flex:0 0 auto" @click="emit('change-store')">Change…</button>
+      </span>
     </div>
 
     <div class="modal-hint">hover a theme to preview · click to apply · <kbd>Esc</kbd> close</div>
